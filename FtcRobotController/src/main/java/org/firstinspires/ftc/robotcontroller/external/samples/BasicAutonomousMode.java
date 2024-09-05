@@ -42,7 +42,7 @@
      static final double     TURN_SPEED    = 0.5;
 
      @Override
-     public void runAutoMode() {
+     public void runOpMode() {
  
          // Initialize the hardware variables. Note that the strings used here must correspond
          // to the names assigned during the robot configuration step on the DS or RC devices.
