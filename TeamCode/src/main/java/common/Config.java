@@ -17,6 +17,10 @@ public class Config {
     public static final String COLOR_SENSOR     = "colorSensor";
     public static final String DISTANCE_SENSOR  = "distanceSensor";
 
+    public static final String DEADWHEEL = "deadwheel"; // Need to set up in driver station
+
+    public static final String CAMERA           = "Webcam 1";
+
     public static final String LIFTING_WENCH    = "lifter";
     public static final String PIXEL_DROPPER    = "dropper";
 
@@ -36,6 +40,4 @@ public class Config {
     public static final String SPINNER_GRAY     = "spinnerGray";
     public static final String SPINNER_BLACK    = "spinnerBlack";
     public static final String SPINNER_BUCKET   = "spinnerBucket";
-
-    public static final String CAMERA           = "Webcam 1";
 }
