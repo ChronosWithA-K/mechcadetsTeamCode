@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /*
@@ -23,7 +24,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Robot: Auto Encoder Test", group="Robot")
+@Autonomous(name="Robot: Auto Encoder Test", group="Test")
 public class RobotAutoEncoderTest extends LinearOpMode {
 
     /* Declare OpMode members. */
@@ -59,8 +60,8 @@ public class RobotAutoEncoderTest extends LinearOpMode {
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // When run, this OpMode should start both motors driving forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
-        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
         rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
 
@@ -85,11 +86,11 @@ public class RobotAutoEncoderTest extends LinearOpMode {
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
-        // Step through each leg of the path,
+        // Step through each leg of the path
         // Note: Reverse movement is obtained by setting a negative distance (not speed)
         encoderDrive(DRIVE_SPEED,  10,  10, 10, 10, 4); // S1: Forward 10 Inches with 4 Sec timeout
         encoderDrive(TURN_SPEED,   12, -12, 12, -12, 4); // S2: Turn Right 12 Inches with 4 Sec timeout
-        encoderDrive(DRIVE_SPEED, -10, -10, 10, 10, 4); // S3: Reverse 10 Inches with 4 Sec timeout
+        encoderDrive(DRIVE_SPEED, -10, -10, -10, -10, 4); // S3: Reverse 10 Inches with 4 Sec timeout
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
@@ -124,7 +125,7 @@ public class RobotAutoEncoderTest extends LinearOpMode {
             leftFrontDrive.setTargetPosition(newLeftFrontTarget);
             leftBackDrive.setTargetPosition(newLeftBackTarget);
             rightFrontDrive.setTargetPosition(newRightFrontTarget);
-            rightFrontDrive.setTargetPosition(newRightBackTarget);
+            rightBackDrive.setTargetPosition(newRightBackTarget);
 
             // Turn On RUN_TO_POSITION
             leftFrontDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
