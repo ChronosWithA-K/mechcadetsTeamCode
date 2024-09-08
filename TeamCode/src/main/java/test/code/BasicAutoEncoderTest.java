@@ -87,9 +87,9 @@ public class BasicAutoEncoderTest extends LinearOpMode {
 
         // Step through each leg of the path,
         // Note: Reverse movement is obtained by setting a negative distance (not speed)
-        encoderDrive(DRIVE_SPEED,  10,  10, 10, 10, 4);  // S1: Forward 10 Inches with 4 Sec timeout
-        encoderDrive(TURN_SPEED,   12, -12, 12, -12, 4);  // S2: Turn Right 12 Inches with 4 Sec timeout
-        encoderDrive(DRIVE_SPEED, -10, -10, 10, 10, 4);  // S3: Reverse 10 Inches with 4 Sec timeout
+        encoderDrive(DRIVE_SPEED,  10,  10, 10, 10, 4); // S1: Forward 10 Inches with 4 Sec timeout
+        encoderDrive(TURN_SPEED,   12, -12, 12, -12, 4); // S2: Turn Right 12 Inches with 4 Sec timeout
+        encoderDrive(DRIVE_SPEED, -10, -10, 10, 10, 4); // S3: Reverse 10 Inches with 4 Sec timeout
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
@@ -101,7 +101,7 @@ public class BasicAutoEncoderTest extends LinearOpMode {
      *  Encoders are not reset as the move is based on the current position.
      *  Move will stop if any of three conditions occur:
      *  1) Move gets to the desired position
-     *  2) Move runs out of time
+     *  2) Move runs out of time - timeoutS variable is the time the robot has to drive a leg
      *  3) Driver stops the OpMode running.
      */
     public void encoderDrive(double speed,
