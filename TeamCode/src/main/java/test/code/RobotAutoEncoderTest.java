@@ -23,8 +23,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Basic Auto Encoder Test", group="Robot")
-public class BasicAutoEncoderTest extends LinearOpMode {
+@Autonomous(name="Robot: Auto Encoder Test", group="Robot")
+public class RobotAutoEncoderTest extends LinearOpMode {
 
     /* Declare OpMode members. */
     private DcMotor leftFrontDrive = null;
