@@ -20,24 +20,4 @@ public class Config {
     public static final String DEADWHEEL = "deadwheel"; // Need to set up in driver station
 
     public static final String CAMERA           = "Webcam 1";
-
-    public static final String LIFTING_WENCH    = "lifter";
-    public static final String PIXEL_DROPPER    = "dropper";
-
-    public static final String HANGING_ELBOW    = "hangingElbow";
-    public static final String HANGING_WRIST    = "hangingWrist";
-    public static final String HANDING_THUMB    = "hangingThumb";
-
-    public static final String PIXEL_ARM        = "pixelArm";
-    public static final String PIXEL_ELBOW      = "pixelElbow";
-    public static final String PIXEL_WRIST      = "pixelWrist";
-
-    public static final String DRONE_ANGLE      = "droneAngle";
-    public static final String DRONE_FIRE       = "droneFire";
-
-    public static final String PIXEL_INTAKE     = "intakePickup";
-    public static final String INTAKE_ROTATE    = "intakeRotate";
-    public static final String SPINNER_GRAY     = "spinnerGray";
-    public static final String SPINNER_BLACK    = "spinnerBlack";
-    public static final String SPINNER_BUCKET   = "spinnerBucket";
 }
