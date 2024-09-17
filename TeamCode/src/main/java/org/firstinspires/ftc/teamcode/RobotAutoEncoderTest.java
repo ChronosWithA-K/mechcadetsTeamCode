@@ -33,6 +33,9 @@ public class RobotAutoEncoderTest extends LinearOpMode {
     private DcMotor rightFrontDrive = null;
     private DcMotor rightBackDrive = null;
 
+    private DcMotor xEncoder = null;
+    private DcMotor yEncoder = null;
+
     private ElapsedTime runtime = new ElapsedTime();
 
     // Calculate the COUNTS_PER_INCH for your specific drive train.
@@ -52,10 +55,13 @@ public class RobotAutoEncoderTest extends LinearOpMode {
     public void runOpMode() {
 
         // Initialize the drive system variables.
-        leftFrontDrive  = hardwareMap.get(DcMotor.class, "leftFront");
-        leftBackDrive = hardwareMap.get(DcMotor.class, "leftBack");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "rightFront");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "rightBack");
+        leftFrontDrive  = hardwareMap.get(DcMotor.class, "left_front");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "left_back");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "right_back");
+
+        xEncoder = hardwareMap.get(DcMotor.class, "x_encoder");
+        yEncoder = hardwareMap.get(DcMotor.class, "y_encoder");
 
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // When run, this OpMode should start both motors driving forward. So adjust these two lines based on your first test drive.
