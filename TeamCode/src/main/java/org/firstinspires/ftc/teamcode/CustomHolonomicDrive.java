@@ -73,15 +73,21 @@ public class CustomHolonomicDrive extends LinearOpMode {
     private DcMotor rightFrontDrive = null;
     private DcMotor rightBackDrive = null;
 
+    private DcMotor xEncoder = null;
+    private DcMotor yEncoder = null;
+
     @Override
     public void runOpMode() {
 
         // Initialize the hardware variables. Note that the strings used here must correspond
         // to the names assigned during the robot configuration step on the DS or RC devices.
-        leftFrontDrive  = hardwareMap.get(DcMotor.class, "leftFront");
-        leftBackDrive  = hardwareMap.get(DcMotor.class, "leftBack");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "rightFront");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "rightBack");
+        leftFrontDrive  = hardwareMap.get(DcMotor.class, "left_front");
+        leftBackDrive  = hardwareMap.get(DcMotor.class, "left_back");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "right_back");
+
+        xEncoder = hardwareMap.get(DcMotor.class, "x_encoder");
+        yEncoder = hardwareMap.get(DcMotor.class, "y_encoder");
 
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
@@ -145,6 +151,8 @@ public class CustomHolonomicDrive extends LinearOpMode {
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
             telemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
+            telemetry.addData("xEncoder", "%4.2f, %4.2f", xEncoder);
+            telemetry.addData("yEncoder", "%4.2f, %4.2f", yEncoder);
             telemetry.update();
         }
     }}
