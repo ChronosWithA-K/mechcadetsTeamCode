@@ -108,8 +108,6 @@ public class Autonomous extends CustomHolonomicDrive {
 
     @Override
     public void start() {
-        super.start();
-
 
         LLStatus limelightStatus = limelight.getStatus();
         telemetry.addData("Pipeline", "Index: %d, Type: %s", limelightStatus.getPipelineIndex(), limelightStatus.getPipelineType());
@@ -218,6 +216,8 @@ public class Autonomous extends CustomHolonomicDrive {
 
     @Override
     public void loop() {
+        telemetry.addLine("In Loop");
+        telemetry.addData("PathIndex: ", pathIndex);
         follower.update();
         if (follower.atParametricEnd()) {
             pathIndex++;
@@ -225,6 +225,7 @@ public class Autonomous extends CustomHolonomicDrive {
                 follower.followPath(paths.get(pathIndex));
             }
         }
+        telemetry.update();
     }
 }
 
