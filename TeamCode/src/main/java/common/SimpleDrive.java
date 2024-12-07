@@ -1,6 +1,7 @@
 package common;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 public class SimpleDrive extends Thread{
@@ -9,9 +10,9 @@ public class SimpleDrive extends Thread{
     private DcMotor leftBackDrive = null;
     private DcMotor rightFrontDrive = null;
     private DcMotor rightBackDrive = null;
-    LinearOpMode opMode;
+    OpMode opMode;
 
-    public SimpleDrive(LinearOpMode opMode) {
+    public SimpleDrive(OpMode opMode) {
         this.opMode = opMode;
         this.setName("Drive");
         init();
@@ -34,9 +35,8 @@ public class SimpleDrive extends Thread{
     public void run() {
         super.run();
 
-        while (!opMode.isStarted()) Thread.yield();
 
-        while (opMode.opModeIsActive()) {
+        while (true) {
 
 
             double axial = -opMode.gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value

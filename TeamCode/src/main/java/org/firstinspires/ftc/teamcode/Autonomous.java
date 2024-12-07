@@ -14,9 +14,13 @@ import org.firstinspires.ftc.teamcode.pedroPathing.follower.Follower;
 import org.firstinspires.ftc.teamcode.pedroPathing.localization.Pose;
 import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.BezierLine;
 import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.Path;
+import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.PathChain;
 import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.Point;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.firstinspires.ftc.teamcode.CustomHolonomicDrive.*;
 
 /**
  * Plans for autonomous:
@@ -28,13 +32,8 @@ import java.util.List;
  * park
  */
 
-/**
- * Pedro pathing coordinate system: bottom left is (0, 0) top right is (144, 144) (inches)
- */
-
 @com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "Autonomous", group = "Test")
-public class Autonomous extends LinearOpMode {
-
+public class Autonomous extends CustomHolonomicDrive {
     /* Declare OpMode members. */
     private DcMotor leftFrontDrive = null;
     private DcMotor leftBackDrive = null;
@@ -49,24 +48,12 @@ public class Autonomous extends LinearOpMode {
 
     private Pose startPose = new Pose(10.000, 58.000, Point.CARTESIAN);
 
-    private ElapsedTime runtime = new ElapsedTime();
-
-    // Calculate the COUNTS_PER_INCH for your specific drive train.
-    // Go to your motor vendor website to determine your motor's COUNTS_PER_MOTOR_REV
-    // For external drive gearing, set DRIVE_GEAR_REDUCTION as needed.
-    // For example, use a value of 2.0 for a 12-tooth spur gear driving a 24-tooth spur gear.
-    // This is gearing DOWN for less speed and more torque.
-    // For gearing UP, use a gear ratio less than 1.0. Note this will affect the direction of wheel rotation.
-    static final double COUNTS_PER_MOTOR_REV = 435;
-    static final double DRIVE_GEAR_REDUCTION = 1.0;     // No External Gearing.
-    static final double WHEEL_DIAMETER_INCHES = 4.09449; // For figuring circumference
-    static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
-    static final double DRIVE_SPEED = 0.6;
-    static final double TURN_SPEED = 0.5;
+    private ArrayList<PathChain> paths = new ArrayList<>();
+    private int pathIndex = 0;
 
     @Override
-    public void runOpMode() {
-
+    public void init() {
+        super.init();
         follower = new Follower(hardwareMap);
         follower.setStartingPose(startPose);
 
@@ -117,9 +104,12 @@ public class Autonomous extends LinearOpMode {
         // Send telemetry message to indicate successful Encoder reset
         telemetry.addData("Starting at", "%7d :%7d", leftFrontDrive.getCurrentPosition(), leftBackDrive.getCurrentPosition(), rightFrontDrive.getCurrentPosition(), rightBackDrive.getCurrentPosition());
         telemetry.update();
+    }
 
-        // Wait for the game to start (driver presses PLAY)
-        waitForStart();
+    @Override
+    public void start() {
+        super.start();
+
 
         LLStatus limelightStatus = limelight.getStatus();
         telemetry.addData("Pipeline", "Index: %d, Type: %s", limelightStatus.getPipelineIndex(), limelightStatus.getPipelineType());
@@ -175,60 +165,65 @@ public class Autonomous extends LinearOpMode {
         }
         telemetry.update();
 
-        while(opModeIsActive()) {
-            follower.followPath(follower.pathBuilder()
-                    .addPath(
-                            new Path(
-                                    new BezierLine(
-                                            new Point(startPose),
-                                            new Point(35.000, 70.000, Point.CARTESIAN) // Drive to chamber
-                                    )
-                            )
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(180))
-                    .build());
-            sleep(250);
-            // Place specimen on top scoring bar
-            follower.followPath(follower.pathBuilder()
-                    .addPath(
-                            new Path(
-                                    new BezierLine(
-                                            new Point(35.000, 70.000, Point.CARTESIAN),
-                                            new Point(13.000, 19.000, Point.CARTESIAN) // Drive to closest sample
-                                    )
-                            )
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(0))
-                    .build());
-            sleep(250);
-            // Pick up sample
-            follower.followPath(follower.pathBuilder()
-                    .addPath(
-                            new Path(
-                                    new BezierLine(
-                                            new Point(13.000, 19.000, Point.CARTESIAN),
-                                            new Point(19.995, 124.173, Point.CARTESIAN) // Drive to bucket
-                                    )
-                            )
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(135))
-                    .build());
-            // Place sample in bucket
-            sleep(250);
-            // Pick up sample
-            follower.followPath(follower.pathBuilder()
-                    .addPath(
-                            new Path(
-                                    new BezierLine(
-                                            new Point(19.995, 124.173, Point.CARTESIAN),
-                                            new Point(10.922, 7.561, Point.CARTESIAN) // Park
-                                    )
-                            )
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(-90))
-                    .build());
-            sleep(250);
-            follower.update();
+        paths.add(follower.pathBuilder()
+                .addPath(
+                        new Path(
+                                new BezierLine(
+                                        new Point(startPose),
+                                        new Point(35.000, 70.000, Point.CARTESIAN) // Drive to chamber
+                                )
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(180))
+                .build());
+
+        paths.add(follower.pathBuilder()
+                .addPath(
+                        new Path(
+                                new BezierLine(
+                                        new Point(35.000, 70.000, Point.CARTESIAN),
+                                        new Point(13.000, 19.000, Point.CARTESIAN) // Drive to closest sample
+                                )
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(0))
+                .build());
+
+        paths.add(follower.pathBuilder()
+                .addPath(
+                        new Path(
+                                new BezierLine(
+                                        new Point(13.000, 19.000, Point.CARTESIAN),
+                                        new Point(19.995, 124.173, Point.CARTESIAN) // Drive to bucket
+                                )
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(135))
+                .build());
+
+        // Place sample in bucket
+
+        paths.add(follower.pathBuilder()
+                .addPath(
+                        new Path(
+                                new BezierLine(
+                                        new Point(19.995, 124.173, Point.CARTESIAN),
+                                        new Point(10.922, 7.561, Point.CARTESIAN) // Park
+                                )
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(-90))
+                .build());
+    }
+
+    @Override
+    public void loop() {
+        follower.update();
+        if (follower.atParametricEnd()) {
+            pathIndex++;
+            if (pathIndex < paths.size()) {
+                follower.followPath(paths.get(pathIndex));
+            }
         }
     }
 }
