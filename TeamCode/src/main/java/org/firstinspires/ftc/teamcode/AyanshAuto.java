@@ -34,10 +34,12 @@ public class AyanshAuto extends LinearOpMode {
     // x is forward/backward y is left/right heading is the position the robot will face.
     private Pose startPose = new Pose(63, 24);
     private Pose preHangSpecimenPose = new Pose(35, 0);
-    private Pose hangSpecimenPose = new Pose(31, 0);
-    private Pose prePickUpSpecimenPose = new Pose(63, 48, Math.PI);
+    private Pose hangSpecimenPose = new Pose(31.39, 0);
+    private Pose prePickUpSpecimenPose = new Pose(55, 48, Math.PI);
     private Pose pickUpSpecimenPose = new Pose(63, 48, Math.PI);
-    private Pose hangSpecimen2Pose = new Pose(33, -2);
+    private Pose preHangSpecimen2Pose = new Pose(35, -2);
+
+    private Pose hangSpecimen2Pose = new Pose(31.39, -2);
     private Pose hangSpecimen3Pose = new Pose(33, 0);
 
     private int pathIndex = 0;
@@ -122,7 +124,7 @@ public class AyanshAuto extends LinearOpMode {
         addLine(preHangSpecimenPose, hangSpecimenPose); // pre to hang
         addLine(hangSpecimenPose, prePickUpSpecimenPose); // hang to pre
         addLine(prePickUpSpecimenPose, pickUpSpecimenPose); // pre to pick
-        addLine(pickUpSpecimenPose, preHangSpecimenPose); // pick to  pre
+        addLine(pickUpSpecimenPose, preHangSpecimen2Pose); // pick to  pre
         addLine(preHangSpecimenPose, hangSpecimen2Pose); // pre to hang
 
         pathIndex = 0;
@@ -145,7 +147,7 @@ public class AyanshAuto extends LinearOpMode {
         int liftTopBucket = 6180;
         int liftBottomBucket = 3480;
         int liftTopBar = 2890;
-        int engaged = 1900;
+        int engaged = 1840;
 
         int liftBottomBar = 960;
 
@@ -265,24 +267,37 @@ public class AyanshAuto extends LinearOpMode {
                     }
                     break;
                 case 3:
-
-                case 4:
-                    specimenClawServo.setPosition(specimenClawClosed);
-                    telemetry.addLine("Stage Pick finished");
+                    specimenClawServo.setPosition(specimenClawOpen);
                     if (follower.getCurrentPath() == null) {
                         follower.followPath(pathChains.get(pathIndex));
                     }
                     break;
-                case 5:
+                case 4:
+                    telemetry.addLine("Stage Pick finished");
+                   if (currentStageStartTime > runtime.seconds() - hangDelay2) {
+                    specimenClawServo.setPosition(specimenClawClosed);
+                } else {
                     viperSlideMotor.setTargetPosition(liftTopBar);
+                    if (follower.getCurrentPath() == null) {
+                        follower.followPath(pathChains.get(pathIndex));
+                    }
+                }
+                    break;
+                case 5:
+                    if (currentStageStartTime > runtime.seconds() - hangDelay2) {
+                        specimenClawServo.setPosition(specimenClawClosed);
+                    }else{
+                        viperSlideMotor.setTargetPosition(engaged);
+
+                    }
                     telemetry.addLine("Stage 5 finished");
                     if (follower.getCurrentPath() == null) {
                         follower.followPath(pathChains.get(pathIndex));
                     }
+
                     break;
                 case 6:
-                    if (currentStageStartTime < runtime.seconds() + 2) {
-                        viperSlideMotor.setTargetPosition(engaged);
+                    if (currentStageStartTime < runtime.seconds() + hangDelay*3) {
                         telemetry.addLine("Stage Hang finished");
                     } else {
                         specimenClawServo.setPosition(specimenClawOpen);
