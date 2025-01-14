@@ -1,22 +1,54 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.LLStatus;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
-import common.SimpleDrive;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.pedroPathing.follower.Follower;
+import org.firstinspires.ftc.teamcode.pedroPathing.localization.Pose;
+import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.BezierLine;
+import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.Path;
+import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.PathChain;
+import org.firstinspires.ftc.teamcode.pedroPathing.pathGeneration.Point;
 
-@TeleOp(name = "Basic: Custom Holonomic Drive", group = "Linear OpMode")
-public class CustomHolonomicDrive extends LinearOpMode {
-    // Declare OpMode members for each of the 4 motors.
+import java.util.ArrayList;
+import java.util.List;
+
+@Config
+@com.qualcomm.robotcore.eventloop.opmode.Autonomous(name = "AyanshAuto", group = "Test")
+public class AyanshAuto extends LinearOpMode {
+
+    private IMU imu = null;
+
+    private Limelight3A limelight;
+
+    private Follower follower;
+    // x is forward/backward y is left/right heading is the position the robot will face.
+    private Pose startPose = new Pose(63, 24);
+    private Pose preHangSpecimenPose = new Pose(35, 0);
+    private Pose hangSpecimenPose = new Pose(31.39, 0);
+    private Pose prePickUpSpecimenPose = new Pose(55, 48, Math.PI);
+    private Pose pickUpSpecimenPose = new Pose(63, 48, Math.PI);
+    private Pose preHangSpecimen2Pose = new Pose(35, -2);
+
+    private Pose hangSpecimen2Pose = new Pose(31.39, -2);
+    private Pose hangSpecimen3Pose = new Pose(33, 0);
+
+    private int pathIndex = 0;
+    private ArrayList<PathChain> pathChains = new ArrayList<PathChain>();
+
     private ElapsedTime runtime = new ElapsedTime();
+    private double waitTime = 0;
 
     private DcMotor viperSlideMotor = null;
-
-    private DcMotor leftHangingMotor = null;
-    private DcMotor rightHangingMotor = null;
 
     private Servo extendServo = null;
     private Servo bucketServo = null;
@@ -24,30 +56,50 @@ public class CustomHolonomicDrive extends LinearOpMode {
     private Servo sampleClawServo = null;
     private Servo wristServo = null;
     private Servo specimenClawServo = null;
-    private Servo leftHangingServo = null;
-    private Servo rightHangingServo = null;
 
-    enum State {
-        IDLE,
-        EXTENDED,
-        PLACE_SPECIMEN_HIGH_BAR,
-        PLACE_SPECIMEN_LOW_BAR,
-        GRABBED,
-        LOADED,
-        LIFTED_HIGH_BUCKET,
-        LIFTED_LOW_BUCKET,
-        DROP_HIGH_BUCKET,
-        DROP_LOW_BUCKET,
-        HANGING_ARMS_OUT,
-        PULL_UP_ROBOT,
+    public static double hangDelay = 0.5;
+    public static double hangDelay2 = 0.5;
+
+
+    private void addLine(Pose start, Pose end) {
+        pathChains.add(follower.pathBuilder()
+                .addPath(
+                        new Path(
+                                new BezierLine(
+                                        new Point(start),
+                                        new Point(end) // Drive to chamber
+
+                                )
+                        )
+                )
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build());
     }
 
-    private State state = State.IDLE;
 
     @Override
     public void runOpMode() {
-        SimpleDrive drive = new SimpleDrive(this);
-        drive.start();
+        follower = new Follower(hardwareMap);
+        follower.setStartingPose(startPose);
+        follower.setMaxPower(0.5);
+
+        viperSlideMotor = hardwareMap.get(DcMotor.class, "viper_slide_motor");
+
+        imu = hardwareMap.get(IMU.class, "imu");
+
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        /*
+         * Pipeline 0 is for the red sample
+         * 1 is for the blue sample
+         * 2 is for the yellow sample
+         * 3 is for april tag 11
+         * 4 is for april tag 12
+         * 5 is for april tag 13
+         * 6 is for april tag 14
+         * 7 is for april tag 15
+         * 8 is for april tag 16
+         * 9 for all at once
+         */
 
         extendServo = hardwareMap.get(Servo.class, "extend_servo");
         bucketServo = hardwareMap.get(Servo.class, "bucket_servo");
@@ -55,12 +107,6 @@ public class CustomHolonomicDrive extends LinearOpMode {
         sampleClawServo = hardwareMap.get(Servo.class, "sample_claw_servo");
         wristServo = hardwareMap.get(Servo.class, "wrist_servo");
         specimenClawServo = hardwareMap.get(Servo.class, "specimen_claw_servo");
-        leftHangingServo = hardwareMap.get(Servo.class, "left_hanging_servo");
-        rightHangingServo = hardwareMap.get(Servo.class, "right_hanging_servo");
-
-        viperSlideMotor = hardwareMap.get(DcMotor.class, "viper_slide_motor");
-        leftHangingMotor = hardwareMap.get(DcMotor.class, "left_hanging_motor");
-        rightHangingMotor = hardwareMap.get(DcMotor.class, "right_hanging_motor");
 
         viperSlideMotor.setTargetPosition(0);
         viperSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -68,28 +114,23 @@ public class CustomHolonomicDrive extends LinearOpMode {
         viperSlideMotor.setPower(1);
         viperSlideMotor.setDirection(DcMotor.Direction.REVERSE);
 
-        leftHangingMotor.setTargetPosition(0);
-        leftHangingMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftHangingMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        leftHangingMotor.setPower(1);
-        leftHangingMotor.setDirection(DcMotor.Direction.REVERSE);
-        rightHangingMotor.setTargetPosition(0);
-        rightHangingMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightHangingMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        rightHangingMotor.setPower(1);
-        rightHangingMotor.setDirection(DcMotor.Direction.FORWARD);
+        // Start the limelight polling for data (getLatestResult() will return null without this)
+        limelight.start();
+        limelight.pipelineSwitch(9);
 
-        // Wait for the game to start (driver presses PLAY)
-        telemetry.addData("Status", "Initialized");
+        // Send telemetry message to indicate successful Encoder reset
         telemetry.update();
+        addLine(startPose, preHangSpecimenPose); // origin to pre
+        addLine(preHangSpecimenPose, hangSpecimenPose); // pre to hang
+        addLine(hangSpecimenPose, prePickUpSpecimenPose); // hang to pre
+        addLine(prePickUpSpecimenPose, pickUpSpecimenPose); // pre to pick
+        addLine(pickUpSpecimenPose, preHangSpecimen2Pose); // pick to  pre
+        addLine(preHangSpecimenPose, hangSpecimen2Pose); // pre to hang
 
+        pathIndex = 0;
+        follower.followPath(pathChains.get(pathIndex));
         waitForStart();
         runtime.reset();
-
-        double liftedTime = 0;
-        double wristTime = 0;
-        double closedTime = 0;
-        double hangingTime = 0;
 
         // Declare initial positions for parts
         double extendServoPosition = 0.0;
@@ -99,376 +140,173 @@ public class CustomHolonomicDrive extends LinearOpMode {
         double wristServoPosition = 0.0;
         double specimenClawServoPosition = 0.0;
 
-        double leftHangingServoPosition = 0.0;
-        double rightHangingServoPosition = 0.0;
-
         int viperSlideMotorPosition = 0;
-
-        int hangingMotorPosition = 0;
 
         // Declare positions for parts to move to
         int liftDown = 0;
         int liftTopBucket = 6180;
         int liftBottomBucket = 3480;
         int liftTopBar = 2890;
+        int engaged = 1840;
+
         int liftBottomBar = 960;
 
         double bucketDrop = 0.37;
         double bucketLoad = 0.5;
 
-        int hangingMotorIn = 0;
-        int hangingMotorOut = 1552;
-
-        double leftHangingServoUp = 1.0;
-        double rightHangingServoUp = 0.0;
-        double leftHangingServoForward = 0.5;
-        double rightHangingServoForward = 0.5;
-
         double extendClosed = 0.0;
         double extendExtended = 1.0;
 
-        double intakeDown = 0.2;
+        double intakeDown = 0.26;
         double intakeUp = 1;
-        double intakeOutOfWay = 0.3;
+        double intakeIdle = 0.65;
 
-        double wristLoad = 0;
+        double wristLoad = 0.5;
         double wristDrop = 1;
-        double wristOutOfWay = 0.2;
+        double wristLift = 0.2;
 
-        double sampleClawClosed = 0.5;
-        double sampleClawOpen = 0;
+        double sampleClawClosed = 0;
+        double sampleClawOpen = 0.4;
 
         double specimenClawClosed = 0;
         double specimenClawOpen = 0.5;
 
-        // Declare buttons for switching between states
-        boolean aPrev = false;
-        boolean bPrev = false;
-        boolean xPrev = false;
-        boolean yPrev = false;
-        boolean rbPrev = false;
+        LLStatus limelightStatus = limelight.getStatus();
+        telemetry.addData("Pipeline", "Index: %d, Type: %s", limelightStatus.getPipelineIndex(), limelightStatus.getPipelineType());
 
-        boolean dpadUpPrev = false;
+        LLResult limelightResult = limelight.getLatestResult();
 
-        // run until the end of the match (driver presses STOP)
+        if (limelightResult != null) {
+            limelight.updateRobotOrientation(imu.getRobotYawPitchRollAngles().getYaw());
+            // Access general information
+            Pose3D botpose = limelightResult.getBotpose();
+
+            double captureLatency = limelightResult.getCaptureLatency();
+            double targetingLatency = limelightResult.getTargetingLatency();
+            double parseLatency = limelightResult.getParseLatency();
+            telemetry.addData("LL Latency", captureLatency + targetingLatency);
+            telemetry.addData("Parse Latency", parseLatency);
+            telemetry.addData("PythonOutput", java.util.Arrays.toString(limelightResult.getPythonOutput()));
+
+            if (limelightResult.isValid()) {
+                double targetX = limelightResult.getTx(); // How far left or right the target is (degrees)
+                double targetY = limelightResult.getTy(); // How far up or down the target is (degrees)
+                double targetArea = limelightResult.getTa(); // How big the target looks (0%-100% of the image)
+
+                telemetry.addData("Target X", targetX);
+                telemetry.addData("Target Y", targetY);
+                telemetry.addData("Target Area", targetArea);
+
+                if (botpose != null) {
+                    double robotX = botpose.getPosition().x;
+                    double robotY = botpose.getPosition().y;
+                    double robotRotation = botpose.getOrientation().getYaw();
+                    telemetry.addData("MT1 Location", "(" + robotX + ", " + robotY + ", " + robotRotation + ")");
+                }
+
+                telemetry.addData("Botpose", botpose.toString());
+
+                // Access fiducial results
+                List<LLResultTypes.FiducialResult> fiducialResults = limelightResult.getFiducialResults();
+                for (LLResultTypes.FiducialResult fr : fiducialResults) {
+                    telemetry.addData("Fiducial", "ID: %d, Family: %s, X: %.2f, Y: %.2f", fr.getFiducialId(), fr.getFamily(), fr.getTargetXDegrees(), fr.getTargetYDegrees());
+                }
+
+                // Access color results
+                List<LLResultTypes.ColorResult> colorResults = limelightResult.getColorResults();
+                for (LLResultTypes.ColorResult cr : colorResults) {
+                    telemetry.addData("Color", "X: %.2f, Y: %.2f", cr.getTargetXDegrees(), cr.getTargetYDegrees());
+                }
+            } else {
+                telemetry.addData("Limelight", "No targets");
+            }
+        } else {
+            telemetry.addData("Limelight", "No data available");
+        }
+        double currentStageStartTime = runtime.seconds();
         while (opModeIsActive()) {
-            boolean a = gamepad1.a && !aPrev;
-            aPrev = gamepad1.a;
-            boolean b = gamepad1.b && !bPrev;
-            bPrev = gamepad1.b;
-            boolean x = gamepad1.x && !xPrev;
-            xPrev = gamepad1.x;
-            boolean y = gamepad1.y && !yPrev;
-            yPrev = gamepad1.y;
-            boolean rb = gamepad1.right_bumper && !rbPrev;
-            rbPrev = gamepad1.right_bumper;
-
-            boolean dpadUp = gamepad1.dpad_up && !dpadUpPrev;
-            dpadUpPrev = gamepad1.dpad_up;
-
-            switch (state) {
-                case IDLE:
-                    viperSlideMotorPosition = liftDown;
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendClosed;
-                    intakeServoPosition = intakeUp;
-                    wristServoPosition = wristDrop;
-                    sampleClawServoPosition = sampleClawClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-//                    if (runtime.seconds() > closedTime + 0.25) {
-//                        specimenClawServoPosition = specimenClawOpen;
-//                    }
-
-                    if (a) {
-                        state = State.EXTENDED;
-                        wristTime = runtime.seconds();
-                    } else if (y) {
-                        state = State.PLACE_SPECIMEN_HIGH_BAR;
-                    } else if (x) {
-                        state = State.PLACE_SPECIMEN_LOW_BAR;
-                    } else if (dpadUp) {
-                        state = State.HANGING_ARMS_OUT;
-                        hangingTime = runtime.seconds();
+            follower.update();
+            if (follower.getCurrentPath() != null && follower.atParametricEnd()) {
+                if (pathIndex < pathChains.size() - 1) {
+                    pathIndex++;
+                    currentStageStartTime = runtime.seconds();
+                    waitTime += 1;
+                    follower.resetCurrentPath();
+                }
+            }
+            telemetry.addData("currentStageStartTime : ", currentStageStartTime);
+            telemetry.addData("runtime.seconds() : ", runtime.seconds());
+            switch (pathIndex) {
+                case 0:
+                    specimenClawServo.setPosition(specimenClawClosed);
+                    viperSlideMotor.setTargetPosition(liftTopBar);
+                    bucketServo.setPosition(liftTopBucket);
+                    intakeServo.setPosition(0.8);
+                    telemetry.addLine("Stage Initiation Finished");
+                    if (follower.getCurrentPath() == null) {
+                        follower.followPath(pathChains.get(pathIndex));
                     }
                     break;
-                case EXTENDED:
-                    if (runtime.seconds() > wristTime + 0.25) {
-                        sampleClawServoPosition = sampleClawOpen;
-                    }
-                    viperSlideMotorPosition = liftDown;
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendExtended;
-                    intakeServoPosition = intakeDown;
-                    wristServoPosition = wristLoad;
-                    sampleClawServoPosition = sampleClawOpen;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (a) {
-                        state = State.GRABBED;
-                    } else if (b) {
-                        state = State.IDLE;
+                case 1:
+                    if (follower.getCurrentPath() == null) {
+                        follower.followPath(pathChains.get(pathIndex));
                     }
                     break;
-                case PLACE_SPECIMEN_HIGH_BAR:
-                    viperSlideMotorPosition = liftTopBar;
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendClosed;
-                    intakeServoPosition = intakeUp;
-                    wristServoPosition = wristLoad;
-                    sampleClawServoPosition = sampleClawClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (a || b) {
-                        state = State.IDLE;
-                        closedTime = runtime.seconds();
+                case 2:
+                    if (currentStageStartTime > runtime.seconds() - hangDelay) {
+                        viperSlideMotor.setTargetPosition(engaged);
+                        telemetry.addLine("Stage Prep finished");
+                        telemetry.addData("runtime.seconds() + hangDelay", runtime.seconds() - hangDelay);
+                    } else {
+                        specimenClawServo.setPosition(specimenClawOpen);
+                        viperSlideMotor.setTargetPosition(0);
+                        telemetry.addLine("Stage Hang and 3 finished");
+                        if (follower.getCurrentPath() == null) {
+                            follower.followPath(pathChains.get(pathIndex));
+                        }
                     }
                     break;
-                case PLACE_SPECIMEN_LOW_BAR:
-                    viperSlideMotorPosition = liftBottomBar;
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendClosed;
-                    intakeServoPosition = intakeUp;
-                    wristServoPosition = wristLoad;
-                    sampleClawServoPosition = sampleClawClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (a || b) {
-                        state = State.IDLE;
-                        closedTime = runtime.seconds();
+                case 3:
+                    specimenClawServo.setPosition(specimenClawOpen);
+                    if (follower.getCurrentPath() == null) {
+                        follower.followPath(pathChains.get(pathIndex));
                     }
                     break;
-                case GRABBED:
-                    viperSlideMotorPosition = liftDown;
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendExtended;
-                    intakeServoPosition = intakeDown;
-                    wristServoPosition = wristLoad;
-                    sampleClawServoPosition = sampleClawClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (a) {
-                        state = State.LOADED;
-                    } else if (b) {
-                        state = State.EXTENDED;
-                    } else if (rb) {
-                        state = State.IDLE;
+                case 4:
+                    telemetry.addLine("Stage Pick finished");
+                    if (currentStageStartTime > runtime.seconds() - hangDelay2) {
+                        specimenClawServo.setPosition(specimenClawClosed);
+                    } else {
+                        viperSlideMotor.setTargetPosition(liftTopBar);
+                        if (follower.getCurrentPath() == null) {
+                            follower.followPath(pathChains.get(pathIndex));
+                        }
                     }
                     break;
-                case LOADED:
-                    viperSlideMotorPosition = liftDown;
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendClosed;
-                    intakeServoPosition = intakeUp;
-                    wristServoPosition = wristDrop;
-                    sampleClawServoPosition = sampleClawClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
+                case 5:
+                    if (currentStageStartTime > runtime.seconds() - hangDelay2) {
+                        specimenClawServo.setPosition(specimenClawClosed);
+                    }else{
+                        viperSlideMotor.setTargetPosition(engaged);
 
-                    if (y) {
-                        state = State.LIFTED_HIGH_BUCKET;
-                        liftedTime = runtime.seconds();
-                    } else if (x) {
-                        state = State.LIFTED_LOW_BUCKET;
-                        liftedTime = runtime.seconds();
-                    } else if (b) {
-                        state = State.GRABBED;
-                        wristTime = runtime.seconds();
-                    } else if (rb) {
-                        state = State.IDLE;
                     }
+                    telemetry.addLine("Stage 5 finished");
+                    if (follower.getCurrentPath() == null) {
+                        follower.followPath(pathChains.get(pathIndex));
+                    }
+
                     break;
-                case LIFTED_HIGH_BUCKET:
-                    intakeServoPosition = intakeOutOfWay;
-
-                    if (runtime.seconds() > liftedTime + 1) {
-                        viperSlideMotorPosition = liftTopBucket;
-                    }
-
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (runtime.seconds() > liftedTime + 0.5) {
-                        wristServoPosition = wristOutOfWay;
-                    }
-                    sampleClawServoPosition = sampleClawOpen;
-
-                    if (a) {
-                        state = State.DROP_HIGH_BUCKET;
-                    } else if (b) {
-                        state = State.IDLE;
-                    }
-                    break;
-                case LIFTED_LOW_BUCKET:
-                    intakeServoPosition = intakeOutOfWay;
-
-                    if (runtime.seconds() > liftedTime + 1) {
-                        viperSlideMotorPosition = liftBottomBucket;
-                    }
-                    bucketServoPosition = bucketLoad;
-                    extendServoPosition = extendClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (runtime.seconds() > liftedTime + 0.5) {
-                        wristServoPosition = wristOutOfWay;
-                    }
-                    sampleClawServoPosition = sampleClawOpen;
-
-                    if (a) {
-                        state = State.DROP_LOW_BUCKET;
-                    } else if (b) {
-                        state = State.IDLE;
-                    }
-                    break;
-                case DROP_HIGH_BUCKET:
-                    viperSlideMotorPosition = liftTopBucket;
-                    bucketServoPosition = bucketDrop;
-                    extendServoPosition = extendClosed;
-                    intakeServoPosition = intakeOutOfWay;
-                    wristServoPosition = wristOutOfWay;
-                    sampleClawServoPosition = sampleClawOpen;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (a) {
-                        state = State.IDLE;
-                    } else if (b) {
-                        state = State.LIFTED_HIGH_BUCKET;
-                    }
-                    break;
-                case DROP_LOW_BUCKET:
-                    viperSlideMotorPosition = liftBottomBucket;
-                    bucketServoPosition = bucketDrop;
-                    extendServoPosition = extendClosed;
-                    intakeServoPosition = intakeOutOfWay;
-                    wristServoPosition = wristOutOfWay;
-                    sampleClawServoPosition = sampleClawOpen;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoUp;
-                    rightHangingServoPosition = rightHangingServoUp;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (a) {
-                        state = State.IDLE;
-                    }
-                    if (b) {
-                        state = State.LIFTED_LOW_BUCKET;
-                    }
-                    break;
-                case HANGING_ARMS_OUT:
-                    viperSlideMotorPosition = liftDown;
-                    bucketServoPosition = bucketDrop;
-                    extendServoPosition = extendExtended;
-                    intakeServoPosition = intakeDown;
-                    wristServoPosition = wristLoad;
-                    sampleClawServoPosition = sampleClawClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    leftHangingServoPosition = leftHangingServoForward;
-                    rightHangingServoPosition = rightHangingServoForward;
-
-                    if (runtime.seconds() > hangingTime + 1) {
-                        hangingMotorPosition = hangingMotorOut;
-                    }
-
-                    if (a) {
-                        state = State.PULL_UP_ROBOT;
-                        hangingTime = runtime.seconds();
-                    } else if (b) {
-                        state = State.IDLE;
-                    }
-                    break;
-                case PULL_UP_ROBOT:
-                    viperSlideMotorPosition = liftDown;
-                    bucketServoPosition = bucketDrop;
-                    extendServoPosition = extendExtended;
-                    intakeServoPosition = intakeDown;
-                    wristServoPosition = wristLoad;
-                    sampleClawServoPosition = sampleClawClosed;
-                    specimenClawServoPosition = specimenClawClosed;
-                    hangingMotorPosition = hangingMotorIn;
-
-                    if (runtime.seconds() > hangingTime + 0.75) {
-                        leftHangingServoPosition = leftHangingServoUp;
-                        rightHangingServoPosition = rightHangingServoUp;
-                    }
-
-                    if (b) {
-                        state = State.HANGING_ARMS_OUT;
+                case 6:
+                    if (currentStageStartTime < runtime.seconds() + hangDelay*3) {
+                        telemetry.addLine("Stage Hang finished");
+                    } else {
+                        specimenClawServo.setPosition(specimenClawOpen);
+                        if (follower.getCurrentPath() == null) {
+                            follower.followPath(pathChains.get(pathIndex));
+                        }
                     }
                     break;
             }
-
-            // Set servo positions
-            extendServo.setPosition(extendServoPosition);
-            bucketServo.setPosition(bucketServoPosition);
-            intakeServo.setPosition(intakeServoPosition);
-            sampleClawServo.setPosition(sampleClawServoPosition);
-            wristServo.setPosition(wristServoPosition);
-            specimenClawServo.setPosition(specimenClawServoPosition);
-            leftHangingServo.setPosition(leftHangingServoPosition);
-            rightHangingServo.setPosition(rightHangingServoPosition);
-
-            // Set (non-drive) motor power
-            viperSlideMotor.setTargetPosition(viperSlideMotorPosition);
-            if (viperSlideMotor.isBusy()) {
-                viperSlideMotor.setPower(1);
-            } else if (!viperSlideMotor.isBusy() && viperSlideMotorPosition == 0) {
-                viperSlideMotor.setPower(0);
-            }
-            leftHangingMotor.setTargetPosition(hangingMotorPosition);
-            if (leftHangingMotor.isBusy()) {
-                leftHangingMotor.setPower(1);
-            } else if (!leftHangingMotor.isBusy() && hangingMotorPosition == 0) {
-                leftHangingMotor.setPower(0);
-            }
-            rightHangingMotor.setTargetPosition(hangingMotorPosition);
-            if (rightHangingMotor.isBusy()) {
-                rightHangingMotor.setPower(1);
-            } else if (!rightHangingMotor.isBusy() && hangingMotorPosition == 0) {
-                rightHangingMotor.setPower(0);
-            }
-
-            // Show the elapsed game time and wheel power.
-            telemetry.addData("Status", "Run Time: " + runtime.toString());
-            telemetry.addData("State", state);
-            telemetry.addData("extendServo position", extendServoPosition);
-            telemetry.addData("bucketServo position", bucketServoPosition);
-            telemetry.addData("intakeServo position", intakeServoPosition);
-            telemetry.addData("clawServo position", sampleClawServoPosition);
-            telemetry.addData("clawWristServo position", wristServoPosition);
-            telemetry.addData("specimenClawServo position", specimenClawServoPosition);
-            telemetry.addData("leftHangingMotor position", leftHangingServoPosition);
-            telemetry.addData("rightHangingServo position", rightHangingServoPosition);
-            telemetry.addData("hangingMotorPosition", hangingMotorPosition);
-            telemetry.addData("Viper encoder", viperSlideMotor.getCurrentPosition());
-            telemetry.addData("Left hanging motor encoder", leftHangingMotor.getCurrentPosition());
-            telemetry.addData("Right hanging motor encoder", rightHangingMotor.getCurrentPosition());
             telemetry.update();
         }
     }
